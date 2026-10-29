@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 500" role="img" aria-labelledby="title desc">
+  <title id="title">Proposed custom chess piece set</title>
+  <desc id="desc">King, queen, rook, bishop, knight, and pawn shown in ivory and charcoal finishes on sample board squares.</desc>
+  <defs>
+    <style>
+      .page{fill:#171713}.label{font:600 15px 'Segoe UI',sans-serif;letter-spacing:.12em;text-transform:uppercase;fill:#b9b3a4}.note{font:400 15px 'Segoe UI',sans-serif;fill:#b9b3a4}
+      .tile-light{fill:#d8cba8}.tile-dark{fill:#6e7552}.white-piece{fill:#f8f3e7;stroke:#2e3029;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}.black-piece{fill:#24231d;stroke:#efe6d1;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}.cut{fill:none;stroke:inherit;stroke-width:3.4;stroke-linecap:round}.black-piece .cut{stroke-width:2.2}
+    </style>
+    <symbol id="king" viewBox="0 0 100 112">
+      <path d="M46 8h8v12h12v8H54v11H46V28H34v-8h12z"/>
+      <path d="M35 41c7-5 23-5 30 0l-4 15c10 8 15 20 15 35H24c0-15 5-27 15-35z"/>
+      <path d="M19 91h62l5 12H14z"/>
+    </symbol>
+    <symbol id="queen" viewBox="0 0 100 112">
+      <circle cx="19" cy="25" r="6"/><circle cx="50" cy="16" r="6"/><circle cx="81" cy="25" r="6"/>
+      <path d="M18 34l14 18 18-27 18 27 14-18-9 55H27z"/>
+      <path d="M22 89h56l7 14H15z"/>
+      <path class="cut" d="M30 72h40"/>
+    </symbol>
+    <symbol id="rook" viewBox="0 0 100 112">
+      <path d="M21 17h16v13h12V17h14v13h12V17h10v29l-10 8 4 36H21l4-36-10-8V17z"/>
+      <path d="M17 90h66l5 13H12z"/>
+      <path class="cut" d="M27 56h46"/>
+    </symbol>
+    <symbol id="bishop" viewBox="0 0 100 112">
+      <path d="M50 12c14 13 22 25 22 37 0 10-5 18-15 24l16 17H27l16-17c-10-6-15-14-15-24 0-12 8-24 22-37z"/>
+      <path d="M22 90h56l7 13H15z"/>
+      <path class="cut" d="M59 30L41 58"/>
+    </symbol>
+    <symbol id="knight" viewBox="0 0 100 112">
+      <path d="M28 89c2-21 7-38 20-50l-8-16 21 6 13-8c3 18 2 31-6 41l7 27z"/>
+      <path d="M22 89h57l7 14H15z"/>
+      <path class="cut" d="M57 43l6 2"/>
+      <path class="cut" d="M41 65c9 1 17-2 23-8"/>
+    </symbol>
+    <symbol id="pawn" viewBox="0 0 100 112">
+      <circle cx="50" cy="30" r="16"/>
+      <path d="M37 47h26c0 16 6 27 14 42H23c8-15 14-26 14-42z"/>
+      <path d="M19 89h62l6 14H13z"/>
+    </symbol>
+  </defs>
+
+  <rect class="page" width="1240" height="500"/>
+  <text class="label" x="40" y="45">Carved editorial · proposed original set</text>
+  <text class="note" x="40" y="72">Broad bases, open counters, one continuous silhouette. Ivory uses a dark keyline; charcoal uses a fine warm keyline.</text>
+
+  <g transform="translate(40 104)">
+    <g transform="translate(0 0)"><rect class="tile-dark" width="180" height="160"/><use href="#king" x="40" y="21" width="100" height="112" class="white-piece"/></g>
+    <g transform="translate(196 0)"><rect class="tile-light" width="180" height="160"/><use href="#queen" x="40" y="21" width="100" height="112" class="white-piece"/></g>
+    <g transform="translate(392 0)"><rect class="tile-dark" width="180" height="160"/><use href="#rook" x="40" y="21" width="100" height="112" class="white-piece"/></g>
+    <g transform="translate(588 0)"><rect class="tile-light" width="180" height="160"/><use href="#bishop" x="40" y="21" width="100" height="112" class="white-piece"/></g>
+    <g transform="translate(784 0)"><rect class="tile-dark" width="180" height="160"/><use href="#knight" x="40" y="21" width="100" height="112" class="white-piece"/></g>
+    <g transform="translate(980 0)"><rect class="tile-light" width="180" height="160"/><use href="#pawn" x="40" y="21" width="100" height="112" class="white-piece"/></g>
+  </g>
+
+  <g transform="translate(40 280)">
+    <g transform="translate(0 0)"><rect class="tile-light" width="180" height="160"/><use href="#king" x="40" y="21" width="100" height="112" class="black-piece"/></g>
+    <g transform="translate(196 0)"><rect class="tile-dark" width="180" height="160"/><use href="#queen" x="40" y="21" width="100" height="112" class="black-piece"/></g>
+    <g transform="translate(392 0)"><rect class="tile-light" width="180" height="160"/><use href="#rook" x="40" y="21" width="100" height="112" class="black-piece"/></g>
+    <g transform="translate(588 0)"><rect class="tile-dark" width="180" height="160"/><use href="#bishop" x="40" y="21" width="100" height="112" class="black-piece"/></g>
+    <g transform="translate(784 0)"><rect class="tile-light" width="180" height="160"/><use href="#knight" x="40" y="21" width="100" height="112" class="black-piece"/></g>
+    <g transform="translate(980 0)"><rect class="tile-dark" width="180" height="160"/><use href="#pawn" x="40" y="21" width="100" height="112" class="black-piece"/></g>
+  </g>
+  <text class="label" x="64" y="472">King</text><text class="label" x="260" y="472">Queen</text><text class="label" x="456" y="472">Rook</text><text class="label" x="652" y="472">Bishop</text><text class="label" x="848" y="472">Knight</text><text class="label" x="1044" y="472">Pawn</text>
+</svg>
