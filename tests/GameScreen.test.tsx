@@ -205,12 +205,21 @@ describe('two-player game screen', () => {
     render(<App />);
     await user.click(screen.getByRole('button', { name: /Two Players/ }));
 
+    // Wait for each state update before the next key so slower CI runners
+    // cannot race the roving focus or selection.
     square('e2').focus();
+    await waitFor(() => expect(square('e2')).toHaveFocus());
     await user.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(square('e2').closest('[role="gridcell"]')).toHaveAttribute('aria-selected', 'true'),
+    );
     await user.keyboard('{ArrowUp}');
+    await waitFor(() => expect(square('e3')).toHaveFocus());
     await user.keyboard('{Enter}');
 
-    await waitFor(() => expect(square('e3')).toHaveAttribute('aria-label', 'e3, White pawn'));
+    await waitFor(() => expect(square('e3')).toHaveAttribute('aria-label', 'e3, White pawn'), {
+      timeout: 3000,
+    });
     expect(square('e3')).toHaveFocus();
     expect(square('e2')).toHaveAttribute('aria-label', 'e2, empty');
     expect(within(screen.getByRole('list')).getByText('e3')).toBeInTheDocument();
