@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { BoardCell, BoardMatrix, MoveRecord, PieceColor, SquareId } from '../engine';
 import { squareShade } from '../engine';
@@ -10,6 +10,7 @@ interface BoardProps {
   readonly draggable: PieceColor | 'both' | 'none';
   readonly selectedSquare: SquareId | null;
   readonly legalTargets: readonly SquareId[];
+  readonly castlingTargets: readonly SquareId[];
   readonly lastMove: MoveRecord | null;
   readonly checkedKingSquare: SquareId | null;
   readonly disabled: boolean;
@@ -31,7 +32,37 @@ export function Board(props: BoardProps): JSX.Element {
   }, [props.board, props.orientation]);
   const visualSquares = useMemo(() => rows.flat().map((cell) => cell.square), [rows]);
   const [activeSquare, setActiveSquare] = useState<SquareId>(() => visualSquares[0] ?? 'a8');
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const wasOverflowingRef = useRef(false);
   const targets = useMemo(() => new Set<SquareId>(props.legalTargets), [props.legalTargets]);
+  const castlingTargets = useMemo(() => new Set<SquareId>(props.castlingTargets), [props.castlingTargets]);
+
+  useEffect(() => {
+    const viewport = scrollRef.current;
+    if (viewport === null) return;
+    let frame = 0;
+    const syncNarrowPosition = (): void => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const overflowing = viewport.scrollWidth > viewport.clientWidth + 1;
+        if (overflowing && !wasOverflowingRef.current) {
+          viewport.scrollLeft = (viewport.scrollWidth - viewport.clientWidth) / 2;
+        }
+        wasOverflowingRef.current = overflowing;
+      });
+    };
+    syncNarrowPosition();
+    window.addEventListener('resize', syncNarrowPosition);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(syncNarrowPosition);
+    observer?.observe(viewport);
+    const board = viewport.querySelector<HTMLElement>('.board');
+    if (board !== null) observer?.observe(board);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', syncNarrowPosition);
+      observer?.disconnect();
+    };
+  }, []);
 
   const moveFocus = (index: number): void => {
     const target = visualSquares[Math.max(0, Math.min(63, index))];
@@ -58,7 +89,6 @@ export function Board(props: BoardProps): JSX.Element {
       return;
     }
     if (event.key === 'Escape' && props.selectedSquare !== null && !props.disabled) {
-      event.preventDefault();
       props.onSquareSelect(props.selectedSquare);
       return;
     }
@@ -76,7 +106,7 @@ export function Board(props: BoardProps): JSX.Element {
   };
 
   return (
-    <div className="board-scroll" role="group" aria-label="Chess board viewport">
+    <div ref={scrollRef} className="board-scroll" role="group" aria-label="Chess board viewport">
       <p className="board-scroll__hint">Scroll sideways to see the full board.</p>
       <div
         className="board"
@@ -91,12 +121,15 @@ export function Board(props: BoardProps): JSX.Element {
         {rows.map((row, rowIndex) => (
           <div className="board__row" role="row" key={`row-${String(rowIndex)}`}>
             {row.map((cell, colIndex) => (
-              <div role="gridcell" className="board__cell" key={cell.square}>
+              <div role="gridcell" aria-selected={props.selectedSquare === cell.square} className="board__cell" key={cell.square}>
                 <Square
                   cell={cell}
                   shade={squareShade(cell.square)}
                   isSelected={props.selectedSquare === cell.square}
                   isLegalTarget={targets.has(cell.square)}
+                  castleSide={(props.selectedSquare === 'e1' || props.selectedSquare === 'e8') && castlingTargets.has(cell.square)
+                    ? cell.square[0] === 'g' ? 'kingside' : 'queenside'
+                    : null}
                   isLastMove={props.lastMove !== null && (props.lastMove.from === cell.square || props.lastMove.to === cell.square)}
                   isCheckedKing={props.checkedKingSquare === cell.square}
                   isDragOver={dragOver === cell.square}

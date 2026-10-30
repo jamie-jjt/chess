@@ -21,7 +21,7 @@ export function MoveList({ history }: MoveListProps): JSX.Element {
     <section className="moves" aria-label="Move list">
       <h2 className="panel__title">Move ledger</h2>
       {pairs.length === 0 ? (
-        <p className="moves__empty">No moves yet. White begins.</p>
+        <p className="moves__empty"><span>No moves yet.</span> White begins.</p>
       ) : (
         <>
           <div className="moves__head" aria-hidden="true"><span>Move</span><span>White</span><span>Black</span></div>

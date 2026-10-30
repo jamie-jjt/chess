@@ -1,0 +1,61 @@
+name: Deploy to GitHub Pages
+
+# Builds on every push to main and publishes dist/ to GitHub Pages.
+# Requires Settings -> Pages -> Source to be set to "GitHub Actions".
+on:
+  push:
+    branches: [main]
+  # Allows a manual run from the Actions tab.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it mid-publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # `npm ci` runs the postinstall step, which copies the Stockfish engine
+      # into public/engine/ so the build can pick it up.
+      - run: npm ci
+
+      - run: npx tsc --noEmit
+
+      - run: npm test
+
+      - run: npm run build
+
+      # Fail loudly rather than publishing a site whose engine is missing.
+      - name: Check the engine shipped
+        run: |
+          test -f dist/engine/stockfish-19-lite-single.js
+          test -f dist/engine/stockfish-19-lite-single.wasm
+          test -f dist/engine/LICENSE-stockfish.txt
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

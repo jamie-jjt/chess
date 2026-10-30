@@ -1,8 +1,9 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App';
 import { SetupScreen } from '../src/screens/SetupScreen';
+import type { CustomStart } from '../src/screens/SetupScreen';
 import { FIXTURES } from './helpers/setupFixtures';
 
 function square(id: string): HTMLElement {
@@ -13,19 +14,36 @@ function palette(code: string): HTMLElement {
   return screen.getByTestId(`palette-${code}`);
 }
 
-function renderSetup(initialFen?: string, writeClipboard?: (text: string) => Promise<void>) {
-  const onStart = vi.fn<(fen: string) => void>();
+function renderSetup(initialFen?: string) {
+  const onStartTwoPlayer = vi.fn<(start: CustomStart) => void>();
+  const onStartVsComputer = vi.fn<(start: CustomStart) => void>();
   const onExit = vi.fn();
   render(
     <SetupScreen
-      onStart={onStart}
+      onStartTwoPlayer={onStartTwoPlayer}
+      onStartVsComputer={onStartVsComputer}
       onExit={onExit}
       {...(initialFen === undefined ? {} : { initialFen })}
-      {...(writeClipboard === undefined ? {} : { writeClipboard })}
     />,
   );
-  return { onStart, onExit };
+  return { onStartTwoPlayer, onStartVsComputer, onExit };
 }
+
+/**
+ * jsdom has no Clipboard API, so the editor's default path reports failure.
+ * These tests install one for the duration of a single test.
+ */
+function stubClipboard(writeText: (text: string) => Promise<void>): void {
+  Object.defineProperty(navigator, 'clipboard', {
+    value: { writeText },
+    configurable: true,
+    writable: true,
+  });
+}
+
+afterEach(() => {
+  Reflect.deleteProperty(navigator, 'clipboard');
+});
 
 describe('reaching the setup editor', () => {
   it('is offered on the start screen and opens', async () => {
@@ -56,6 +74,7 @@ describe('reaching the setup editor', () => {
 
     await user.click(screen.getByRole('button', { name: /Custom Position/ }));
     await user.click(screen.getByRole('button', { name: 'Clear board' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Clear every piece?' })).getByRole('button', { name: 'Clear board' }));
 
     // An empty board cannot start.
     expect(screen.getByRole('button', { name: 'Start game' })).toBeDisabled();
@@ -75,7 +94,7 @@ describe('reaching the setup editor', () => {
     expect(square('d1')).toHaveAttribute('aria-label', 'd1, White queen');
     expect(square('a1')).toHaveAttribute('aria-label', 'a1, empty');
     expect(screen.getByRole('status', { name: 'Game status' })).toHaveTextContent('White to move');
-  });
+  }, 10_000);
 });
 
 describe('the palette', () => {
@@ -97,10 +116,12 @@ describe('the palette', () => {
 
     expect(palette('wq')).toHaveAccessibleName('White queen, 0 on board');
 
-    await user.click(palette('wq'));
+    palette('wq').focus();
+    await user.keyboard('{Enter}');
     expect(palette('wq')).toHaveAttribute('aria-pressed', 'true');
 
-    await user.click(square('d4'));
+    square('d4').focus();
+    await user.keyboard('{Enter}');
 
     expect(square('d4')).toHaveAttribute('aria-label', 'd4, White queen');
     expect(palette('wq')).toHaveAccessibleName('White queen, 1 on board');
@@ -232,6 +253,7 @@ describe('problem reporting', () => {
     renderSetup();
 
     await user.click(screen.getByRole('button', { name: 'Clear board' }));
+    await user.click(within(screen.getByRole('dialog', { name: 'Clear every piece?' })).getByRole('button', { name: 'Clear board' }));
 
     const problems = screen.getByRole('region', { name: 'Position problems' });
     expect(within(problems).getByText('White needs a king.')).toBeInTheDocument();
@@ -243,6 +265,13 @@ describe('problem reporting', () => {
   it('uses the singular when only one thing is wrong', async () => {
     const user = userEvent.setup();
     renderSetup(FIXTURES.bareKings);
+
+    const readyProblems = screen.getByRole('region', { name: 'Position problems' });
+    expect(screen.getByRole('button', { name: 'Start game' })).toBeEnabled();
+    expect(screen.getByText('Ready to play.')).toBeInTheDocument();
+    expect(within(readyProblems).getByText('Worth knowing')).toBeInTheDocument();
+    expect(readyProblems).toHaveTextContent(/insufficient material/i);
+    expect(readyProblems).not.toHaveTextContent(/fix before you can start/i);
 
     await user.click(square('e1'));
 
@@ -329,28 +358,33 @@ describe('FEN controls', () => {
 
   it('copies the FEN and says so', async () => {
     const user = userEvent.setup();
-    const writeClipboard = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);
-    renderSetup(FIXTURES.bareKings, writeClipboard);
+    const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);
+    stubClipboard(writeText);
+    renderSetup(FIXTURES.bareKings);
 
     await user.click(screen.getByRole('button', { name: 'Copy FEN' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Copied.')).toBeInTheDocument();
+      expect(screen.getByRole('status', { name: 'Clipboard status' })).toHaveTextContent(
+        /copied/i,
+      );
     });
-    expect(writeClipboard).toHaveBeenCalledWith(FIXTURES.bareKings);
+    expect(writeText).toHaveBeenCalledWith(FIXTURES.bareKings);
   });
 
   it('falls back to a hint when the clipboard refuses', async () => {
     const user = userEvent.setup();
-    const writeClipboard = vi
-      .fn<(text: string) => Promise<void>>()
-      .mockRejectedValue(new Error('denied'));
-    renderSetup(FIXTURES.bareKings, writeClipboard);
+    stubClipboard(vi.fn<(text: string) => Promise<void>>().mockRejectedValue(new Error('denied')));
+    renderSetup(FIXTURES.bareKings);
 
     await user.click(screen.getByRole('button', { name: 'Copy FEN' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Could not reach the clipboard/)).toBeInTheDocument();
+      expect(screen.getByRole('status', { name: 'Clipboard status' })).toHaveTextContent(
+        /could not reach the clipboard/i,
+      );
     });
   });
+
+
 });

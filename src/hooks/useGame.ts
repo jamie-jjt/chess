@@ -24,6 +24,7 @@ export interface UseGameValue {
   readonly snapshot: GameSnapshot;
   readonly selectedSquare: SquareId | null;
   readonly legalTargets: readonly SquareId[];
+  readonly castlingTargets: readonly SquareId[];
   readonly pendingPromotion: PendingPromotion | null;
   readonly canUndo: boolean;
   readonly isGameOver: boolean;
@@ -73,6 +74,12 @@ export function useGame(options: UseGameOptions = {}): UseGameValue {
     () => (selectedSquare === null ? [] : game.legalDestinationsFrom(selectedSquare)),
     // `snapshot` is the render-level proof that the position changed.
     [game, selectedSquare, snapshot],
+  );
+  const castlingTargets = useMemo<readonly SquareId[]>(
+    () => game.legalMoves()
+      .filter((move) => move.piece === 'k' && move.san.startsWith('O-O'))
+      .map((move) => move.to),
+    [game, snapshot],
   );
 
   const applyMove = useCallback(
@@ -174,6 +181,7 @@ export function useGame(options: UseGameOptions = {}): UseGameValue {
     snapshot,
     selectedSquare,
     legalTargets,
+    castlingTargets,
     pendingPromotion,
     canUndo: snapshot.history.length > 0,
     isGameOver: snapshot.result.type !== 'in-progress',

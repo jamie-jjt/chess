@@ -7,9 +7,14 @@ import type { EngineEvaluation } from '../hooks/useComputerGame';
  */
 export function formatEvaluation(evaluation: EngineEvaluation): string {
   if (evaluation.mateIn !== null) {
+    // UCI reports an already-delivered mate as `mate 0`. Normalising the score
+    // to White's point of view multiplies by a sign, which tells us nothing at
+    // zero, so the winner is deliberately not named here.
+    if (evaluation.mateIn === 0) return 'Mate on the board';
+
     const moves = Math.abs(evaluation.mateIn);
     const winner = colorLabel(evaluation.mateIn > 0 ? 'w' : 'b');
-    return moves === 0 ? `${winner} has mated` : `Mate in ${String(moves)} for ${winner}`;
+    return `Mate in ${String(moves)} for ${winner}`;
   }
 
   if (evaluation.pawns === null) return 'Even';

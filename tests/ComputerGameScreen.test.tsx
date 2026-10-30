@@ -110,7 +110,8 @@ describe('computer game screen under StrictMode', () => {
 });
 
 describe('computer game screen', () => {
-  it('shows the board with the player colour at the bottom', () => {
+  it('shows the board with the player colour at the bottom', async () => {
+    const user = userEvent.setup();
     const { createEngine } = engineFactory();
     render(
       <ComputerGameScreen
@@ -126,6 +127,38 @@ describe('computer game screen', () => {
     // Black at the bottom means rank 1 is rendered first, h-file leftmost.
     expect(cells[0]).toContainElement(square('h1'));
     expect(cells[63]).toContainElement(square('a8'));
+
+    square('e2').focus();
+    await user.keyboard('{ArrowRight}');
+    expect(square('d2')).toHaveFocus();
+  });
+
+  it('casts from the player-oriented Black side and keeps accessible hints', async () => {
+    const user = userEvent.setup();
+    const { createEngine } = engineFactory();
+    render(
+      <ComputerGameScreen
+        playerColor="b"
+        difficulty="easy"
+        onExit={vi.fn()}
+        initialFen="r3k3/8/8/8/8/8/8/4K3 b q - 0 1"
+        createEngine={createEngine}
+        minVisibleThinkMs={0}
+      />,
+    );
+
+    expect(screen.getAllByRole('gridcell')[0]).toContainElement(square('h1'));
+    expect(document.querySelector('.game__castle-availability')).toHaveTextContent(/then c8/);
+    square('e8').focus();
+    await user.keyboard('{Enter}');
+    expect(square('c8')).toHaveAccessibleDescription('legal destination, castle queenside');
+    square('c8').focus();
+    await user.keyboard('{Enter}');
+
+    expect(square('c8')).toHaveAttribute('aria-label', 'c8, Black king');
+    expect(square('d8')).toHaveAttribute('aria-label', 'd8, Black rook');
+    expect(square('a8')).toHaveAttribute('aria-label', 'a8, empty');
+    expect(within(screen.getByRole('list')).getByText('O-O-O')).toBeInTheDocument();
   });
 
   it('shows a thinking indicator while the engine searches, then its move', async () => {
@@ -146,6 +179,7 @@ describe('computer game screen', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('thinking-indicator')).toHaveTextContent(/thinking/i);
+      expect(document.querySelector('.game__fullscreen-status')).toHaveTextContent('Easy is thinking…');
     });
 
     await waitFor(() => {
@@ -177,11 +211,11 @@ describe('computer game screen', () => {
     await user.click(square('e4'));
 
     await waitFor(() => {
-      expect(square('d2')).toBeDisabled();
+      expect(square('d2')).toHaveAttribute('aria-disabled', 'true');
     });
 
     await waitFor(() => {
-      expect(square('d2')).toBeEnabled();
+      expect(square('d2')).toHaveAttribute('aria-disabled', 'false');
     });
   });
 
@@ -231,6 +265,7 @@ describe('computer game screen', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/engine.wasm could not be fetched/);
+    expect(document.querySelector('.game__fullscreen-status')).toHaveTextContent('Stockfish could not continue.');
 
     await user.click(within(alert).getByRole('button', { name: 'Dismiss' }));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();

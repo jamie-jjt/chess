@@ -8,10 +8,26 @@ interface GameOverModalProps {
   readonly sideToMove: PieceColor;
   readonly onRestart: () => void;
   readonly onExit: () => void;
+  readonly portalTarget?: Element | null | undefined;
+  readonly inertTarget?: HTMLElement | null | undefined;
 }
 
-function ResultDialog({ headline, detail, onRestart, onExit }: { readonly headline: string; readonly detail: string; readonly onRestart: () => void; readonly onExit: () => void }): JSX.Element {
-  const ref = useDialogFocus<HTMLDivElement>({ initialFocusSelector: '[data-play-again]', inertBackground: true });
+function ResultDialog({
+  headline,
+  detail,
+  onRestart,
+  onExit,
+  portalTarget,
+  inertTarget,
+}: {
+  readonly headline: string;
+  readonly detail: string;
+  readonly onRestart: () => void;
+  readonly onExit: () => void;
+  readonly portalTarget?: Element | null | undefined;
+  readonly inertTarget?: HTMLElement | null | undefined;
+}): JSX.Element {
+  const ref = useDialogFocus<HTMLDivElement>({ initialFocusSelector: '[data-play-again]', inertBackground: true, inertTarget });
   return createPortal(
     <div className="modal-backdrop">
       <div ref={ref} className="modal modal--result" role="dialog" aria-modal="true" aria-labelledby="game-over-title" aria-describedby="game-over-detail">
@@ -24,12 +40,21 @@ function ResultDialog({ headline, detail, onRestart, onExit }: { readonly headli
         </div>
       </div>
     </div>,
-    document.body,
+    portalTarget ?? document.getElementById('dialog-root') ?? document.body,
   );
 }
 
-export function GameOverModal({ result, sideToMove, onRestart, onExit }: GameOverModalProps): JSX.Element | null {
+export function GameOverModal({ result, sideToMove, onRestart, onExit, portalTarget, inertTarget }: GameOverModalProps): JSX.Element | null {
   const description = describeResult(result, sideToMove);
   if (description === null) return null;
-  return <ResultDialog headline={description.headline} detail={description.detail} onRestart={onRestart} onExit={onExit} />;
+  return (
+    <ResultDialog
+      headline={description.headline}
+      detail={description.detail}
+      onRestart={onRestart}
+      onExit={onExit}
+      portalTarget={portalTarget}
+      inertTarget={inertTarget}
+    />
+  );
 }

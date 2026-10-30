@@ -1,3 +1,4 @@
+import { EvaluationReadout } from '../components/EvaluationReadout';
 import { GameView } from '../components/GameView';
 import { ThinkingIndicator } from '../components/ThinkingIndicator';
 import type { Difficulty, StockfishEngine } from '../ai';
@@ -34,6 +35,13 @@ export function ComputerGameScreen({ playerColor, difficulty, onExit, initialFen
       boardLocked={!game.isPlayerTurn}
       topPlayerLabel={`Stockfish · ${preset.label}`}
       bottomPlayerLabel="You"
+      fullscreenStatus={game.engineError !== null
+        ? 'Stockfish could not continue.'
+        : game.isEngineLoading
+          ? 'Stockfish is getting ready…'
+          : game.isThinking
+            ? thinkingLabel
+            : undefined}
       headerSlot={<ThinkingIndicator isThinking={game.isThinking} label={thinkingLabel} />}
       noticeSlot={game.engineError === null ? null : (
         <div className="notice notice--error" role="alert">
@@ -45,12 +53,15 @@ export function ComputerGameScreen({ playerColor, difficulty, onExit, initialFen
         </div>
       )}
       panelSlot={
-        <details className="engine-details">
-          <summary>Opponent details</summary>
-          <p className="game__opponent">
-            Stockfish 19 lite · <strong>{preset.label}</strong> · skill {preset.skillLevel}, depth {preset.depth}. Undo takes back your move and the engine&apos;s reply.
-          </p>
-        </details>
+        <div className="game__engine-meta">
+          <EvaluationReadout evaluation={game.evaluation} />
+          <details className="engine-details">
+            <summary>Opponent details</summary>
+            <p className="game__opponent">
+              Stockfish 19 lite · <strong>{preset.label}</strong> · skill {preset.skillLevel}, depth {preset.depth}. Undo takes back your move and the engine&apos;s reply.
+            </p>
+          </details>
+        </div>
       }
     />
   );

@@ -138,8 +138,9 @@ describe('writing FEN', () => {
     expect(castlingToFen({ ...NO_CASTLING, whiteQueenSide: true, blackKingSide: true })).toBe('Qk');
   });
 
-  it('always writes a zero half-move clock and move one', () => {
+  it('writes the clocks it was given', () => {
     expect(setupToFen(position(FIXTURES.enPassantWhite))).toMatch(/ 0 1$/);
+    expect(setupToFen(position('4k3/8/8/8/8/8/8/4K3 b - - 99 60'))).toMatch(/ 99 60$/);
   });
 
   it('round-trips every fixture', () => {

@@ -9,25 +9,41 @@ function ruleIds(fen: string, strictBishops = false): readonly RuleId[] {
 }
 
 describe('validateSetup', () => {
-  it('runs all nine rules', () => {
-    expect(SETUP_RULES).toHaveLength(9);
+  it('runs all eleven rules', () => {
+    expect(SETUP_RULES).toHaveLength(11);
     expect(SETUP_RULES.map((rule) => rule.id)).toEqual([
       'one-king-per-side',
       'kings-not-adjacent',
       'pawns-off-back-ranks',
       'pawn-count',
       'piece-count',
+      'promotion-accounting',
       'side-not-to-move-safe',
       'castling-rights',
       'en-passant-square',
       'strict-bishops',
+      'game-already-over',
     ]);
-    expect(new Set(SETUP_RULES.map((rule) => rule.id)).size).toBe(9);
+    expect(new Set(SETUP_RULES.map((rule) => rule.id)).size).toBe(11);
   });
 
-  it('gives every rule a plain-language summary for the editor', () => {
+  it('gives every rule a plain-language summary and a severity', () => {
     for (const rule of SETUP_RULES) {
       expect(rule.summary.length).toBeGreaterThan(0);
+      expect(['error', 'warning']).toContain(rule.severity);
+    }
+  });
+
+  it('has exactly one warning-level rule; the rest block play', () => {
+    const warnings = SETUP_RULES.filter((rule) => rule.severity === 'warning');
+    expect(warnings.map((rule) => rule.id)).toEqual(['game-already-over']);
+  });
+
+  it('tags every issue a rule produces with that rule severity', () => {
+    for (const rule of SETUP_RULES) {
+      for (const problem of rule.check(position(FIXTURES.emptyBoard))) {
+        expect(problem.severity).toBe(rule.severity);
+      }
     }
   });
 
@@ -38,19 +54,26 @@ describe('validateSetup', () => {
   });
 
   it('accepts bare kings and both en passant fixtures', () => {
-    expect(validateSetup(position(FIXTURES.bareKings)).isValid).toBe(true);
-    expect(validateSetup(position(FIXTURES.enPassantWhite)).isValid).toBe(true);
-    expect(validateSetup(position(FIXTURES.enPassantBlack)).isValid).toBe(true);
+    // Bare kings is legal, so it is valid — but it is also already a dead
+    // draw, which earns a warning rather than an error.
+    const bare = validateSetup(position(FIXTURES.bareKings));
+    expect(bare.isValid).toBe(true);
+    expect(bare.errors).toEqual([]);
+    expect(bare.warnings.map((problem) => problem.rule)).toEqual(['game-already-over']);
+
+    expect(validateSetup(position(FIXTURES.enPassantWhite)).issues).toEqual([]);
+    expect(validateSetup(position(FIXTURES.enPassantBlack)).issues).toEqual([]);
   });
 
   it('reports an empty board as missing both kings', () => {
     const result = validateSetup(position(FIXTURES.emptyBoard));
 
     expect(result.isValid).toBe(false);
-    expect(result.issues.map((problem) => problem.rule)).toEqual([
+    expect(result.errors.map((problem) => problem.rule)).toEqual([
       'one-king-per-side',
       'one-king-per-side',
     ]);
+    expect(result.warnings).toEqual([]);
   });
 
   it('collects problems from several rules at once', () => {
@@ -67,6 +90,14 @@ describe('validateSetup', () => {
       expect(problem.message).toMatch(/^[A-Z]/);
       expect(problem.message).toMatch(/\.$/);
     }
+  });
+
+  it('carries the clocks through to the FEN it validates', () => {
+    const result = validateSetup(position('4k3/8/8/8/8/8/8/R3K3 w - - 100 60'));
+
+    expect(result.isValid).toBe(true);
+    expect(result.warnings.map((problem) => problem.rule)).toEqual(['game-already-over']);
+    expect(result.warnings[0]?.message).toMatch(/fifty-move/i);
   });
 });
 
@@ -86,7 +117,7 @@ describe('promoted bishops', () => {
     const result = validateSetup(position(FIXTURES.promotedBishop, true));
 
     expect(result.isValid).toBe(false);
-    expect(result.issues.map((problem) => problem.rule)).toEqual(['strict-bishops']);
+    expect(result.errors.map((problem) => problem.rule)).toEqual(['strict-bishops']);
   });
 
   it('produces a position the engine can actually play', () => {
@@ -108,7 +139,7 @@ describe('every valid position is loadable by the engine', () => {
     ['promoted bishop', FIXTURES.promotedBishop],
     ['nine queens', FIXTURES.nineQueens],
   ])('%s', (_name, fen: string) => {
-    expect(validateSetup(position(fen)).isValid).toBe(true);
+    expect(validateSetup(position(fen)).errors).toEqual([]);
     expect(ChessGame.tryFrom(fen)).not.toBeNull();
   });
 });

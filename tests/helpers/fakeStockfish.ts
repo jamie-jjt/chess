@@ -23,6 +23,8 @@ export interface FakeStockfishOptions {
   readonly chooseMove?: (fen: string) => string | null;
   /** Delay before `bestmove`, so cancellation can be exercised. */
   readonly bestMoveDelayMs?: number;
+  /** Delay before `uciok`, standing in for fetching and compiling the WASM. */
+  readonly handshakeDelayMs?: number;
   /** Fails the handshake instead of answering `uciok`. */
   readonly failOnStart?: string;
 }
@@ -70,8 +72,8 @@ export function createFakeStockfish(options: FakeStockfishOptions = {}): {
           }, 0);
           return;
         }
-        emit('id name FakeFish 1.0');
-        emit('uciok');
+        emit('id name FakeFish 1.0', options.handshakeDelayMs ?? 0);
+        emit('uciok', options.handshakeDelayMs ?? 0);
         return;
       }
 

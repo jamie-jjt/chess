@@ -7,6 +7,7 @@ interface SquareProps {
   readonly shade: 'light' | 'dark';
   readonly isSelected: boolean;
   readonly isLegalTarget: boolean;
+  readonly castleSide: 'kingside' | 'queenside' | null;
   readonly isLastMove: boolean;
   readonly isCheckedKing: boolean;
   readonly isDragOver: boolean;
@@ -33,10 +34,12 @@ export function Square(props: SquareProps): JSX.Element {
   if (props.isCheckedKing) classes.push('square--check');
   if (props.isDragOver) classes.push('square--drag-over');
   if (props.isLegalTarget) classes.push(cell.piece === null ? 'square--target' : 'square--capture');
+  if (props.castleSide !== null) classes.push('square--castle');
 
   const states: string[] = [];
   if (props.isSelected) states.push('selected');
   if (props.isLegalTarget) states.push(cell.piece === null ? 'legal destination' : 'legal capture');
+  if (props.castleSide !== null) states.push(`castle ${props.castleSide}`);
   if (props.isLastMove) states.push('last move');
   if (props.isCheckedKing) states.push('king in check');
   if (props.disabled) states.push('moves currently unavailable');
@@ -60,7 +63,6 @@ export function Square(props: SquareProps): JSX.Element {
       data-square={cell.square}
       data-testid={`square-${cell.square}`}
       aria-label={`${cell.square}, ${occupant}`}
-      aria-selected={props.isSelected}
       aria-disabled={props.disabled}
       aria-describedby={states.length > 0 ? stateId : undefined}
       tabIndex={props.tabIndex}

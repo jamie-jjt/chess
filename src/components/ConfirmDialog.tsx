@@ -23,6 +23,6 @@ export function ConfirmDialog({ title, detail, confirmLabel, onConfirm, onCancel
         </div>
       </div>
     </div>,
-    document.body,
+    document.getElementById('dialog-root') ?? document.body,
   );
 }

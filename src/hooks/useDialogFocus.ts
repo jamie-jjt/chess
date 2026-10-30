@@ -7,12 +7,14 @@ interface DialogFocusOptions {
   readonly onEscape?: () => void;
   readonly initialFocusSelector?: string;
   readonly inertBackground?: boolean;
+  readonly inertTarget?: HTMLElement | null | undefined;
 }
 
 export function useDialogFocus<T extends HTMLElement>({
   onEscape,
   initialFocusSelector,
   inertBackground = false,
+  inertTarget,
 }: DialogFocusOptions): RefObject<T> {
   const dialogRef = useRef<T>(null);
   const escapeRef = useRef(onEscape);
@@ -22,7 +24,9 @@ export function useDialogFocus<T extends HTMLElement>({
     const dialog = dialogRef.current;
     if (dialog === null) return;
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const background = inertBackground ? document.getElementById('app-content') : null;
+    const background = inertBackground
+      ? inertTarget ?? document.getElementById('app-surface') ?? document.getElementById('app-content')
+      : null;
     const wasInert = background?.inert ?? false;
     if (background !== null) background.inert = true;
 
@@ -33,7 +37,6 @@ export function useDialogFocus<T extends HTMLElement>({
 
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape' && escapeRef.current !== undefined) {
-        event.preventDefault();
         escapeRef.current();
         return;
       }
@@ -52,7 +55,7 @@ export function useDialogFocus<T extends HTMLElement>({
       if (background !== null) background.inert = wasInert;
       previousFocus?.focus();
     };
-  }, [initialFocusSelector, inertBackground]);
+  }, [initialFocusSelector, inertBackground, inertTarget]);
 
   return dialogRef;
 }
